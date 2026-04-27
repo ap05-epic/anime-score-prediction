@@ -65,3 +65,22 @@ Then open `notebooks/01_eda.ipynb` followed by `notebooks/02_modeling.ipynb`.
 ## Acknowledgement
 
 This project used Anthropic's Claude (web app for strategic planning and report writeup; Claude Code CLI for code, modeling, plots, and repo management). All code was reviewed and run by the author.
+
+
+## How to reproduce
+
+1. Clone the repo and `cd` into it.
+2. Create a virtual environment and install dependencies:
+   ```
+   python -m venv .venv
+   .venv\Scripts\activate          # Windows
+   source .venv/bin/activate       # macOS / Linux
+   pip install -r requirements.txt
+   ```
+3. Download `anime-dataset-2023.csv` from the Kaggle dataset linked above and drop it in `data/`.
+4. Register the venv as a Jupyter kernel and run the notebooks:
+   ```
+   python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
+   jupyter lab notebooks/
+   ```
+5. Run `01_eda.ipynb` first, then `02_modeling.ipynb`. The full modeling notebook completes in ~3 minutes on a modern laptop (the FFN section takes ~30 seconds).

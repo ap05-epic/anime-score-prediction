@@ -62,8 +62,8 @@ def load_raw(path: str | Path) -> pd.DataFrame:
     """Read the raw CSV and apply the basic cleanup that every downstream step needs."""
     df = pd.read_csv(path)
 
-    # Replace the "UNKNOWN" sentinel with NaN. Without this, df.isna() reports
-    # near-zero missing values even though many cells are effectively missing.
+    # Replace the "UNKNOWN" sentinel with real NaN so isna(), dropna(), and the
+    # numeric coercion below all behave the way the rest of the pipeline expects.
     df = df.replace(UNKNOWN_SENTINEL, np.nan)
 
     # Coerce stringified numeric columns. errors='coerce' turns anything still

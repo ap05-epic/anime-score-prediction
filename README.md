@@ -84,3 +84,9 @@ This project used Anthropic's Claude (web app for strategic planning and report 
    jupyter lab notebooks/
    ```
 5. Run `01_eda.ipynb` first, then `02_modeling.ipynb`. The full modeling notebook completes in ~3 minutes on a modern laptop (the FFN section takes ~30 seconds).
+
+
+## License
+
+MIT. See [LICENSE](LICENSE) for the full text.
+

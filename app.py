@@ -188,9 +188,24 @@ def main():
         metrics_all = get_model_metrics()
         m = metrics_all[model_name]
         # Stack vertically: the sidebar is too narrow for 3 side-by-side metrics.
-        st.metric("MAE", f"{m['MAE']:.3f}")
-        st.metric("RMSE", f"{m['RMSE']:.3f}")
-        st.metric("R²", f"{m['R2']:.3f}")
+        # Arrow in the label shows direction; tooltip (the ? icon) explains the
+        # metric for anyone unfamiliar with the abbreviations.
+        st.metric(
+            "MAE ↓",
+            f"{m['MAE']:.3f}",
+            help="Mean Absolute Error — average score-points the prediction is off by. **Lower is better.**",
+        )
+        st.metric(
+            "RMSE ↓",
+            f"{m['RMSE']:.3f}",
+            help="Root Mean Squared Error — like MAE but penalizes large errors more. **Lower is better.**",
+        )
+        st.metric(
+            "R² ↑",
+            f"{m['R2']:.3f}",
+            help="Coefficient of determination — fraction of score variance the model explains. 1.0 is perfect, 0.0 is no better than predicting the dataset mean. **Higher is better.**",
+        )
+        st.caption("↓ lower is better  ·  ↑ higher is better")
 
         st.divider()
         st.caption(

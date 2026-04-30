@@ -23,20 +23,11 @@ Regression on the MyAnimeList community Score (1-10 continuous) given anime meta
 
 ## Demo
 
-A Streamlit app at `app.py` lets you enter anime metadata and get a live score prediction. Useful for sanity-checking the model and for the report screenshots.
+A Streamlit app at `app.py` lets you enter anime metadata and get a live score prediction. Nine preset buttons (Cowboy Bebop, Frieren, SAO, Death Note, FMAB, K-On!, Boruto, Pupa, Ex-Arm) auto-fill the form so you can demo without typing.
 
 ![Demo screenshot](figures/16_demo_screenshot.png)
 
-To launch it locally:
-
-1. Make sure the model artifacts exist. They're not committed because the Random Forest pickles are ~95 MB each (above the GitHub file-size limit). Regenerate them by running `notebooks/02_modeling.ipynb` end-to-end; the final cell writes everything to `models/`.
-2. From the project root with the venv active:
-   ```
-   streamlit run app.py
-   ```
-3. Open the URL Streamlit prints (default `http://localhost:8501`).
-
-The sidebar lets you switch between the three trained models (RF full, RF leak-free, Ridge). Three preset buttons (Cowboy Bebop, Frieren, Sword Art Online) populate the form so you can demo without typing. Built with Streamlit.
+To launch the app, follow the **Getting started** guide below. The launch command itself is one line: `streamlit run app.py`.
 
 ## Dataset
 
@@ -45,14 +36,143 @@ The sidebar lets you switch between the three trained models (RF full, RF leak-f
 - Filtered to rows with a non-missing Score (~17K usable anime)
 - Not committed; see `data/README.md` for download instructions
 
-## Setup
+## Getting started
+
+Total time: about 10 minutes (most of it waiting for `pip install` and one notebook run). The instructions assume zero prior knowledge of Python virtual environments or Jupyter kernels.
+
+### Prerequisites
+
+- **Python 3.10 or 3.11** — check with `python --version`. TensorFlow 2.13+ does not yet support 3.12 on Windows, so stick to 3.10 or 3.11. Get it from [python.org](https://www.python.org/downloads/) if missing.
+- **Git** (or just download the ZIP from GitHub).
+- About **1.5 GB free disk space** (the ML libraries and trained models are bulky).
+
+### Step 1 — Get the code
 
 ```bash
+git clone https://github.com/ap05-epic/anime-score-prediction.git
+cd anime-score-prediction
+```
+
+If you don't have git, hit the green **Code** button on GitHub, choose **Download ZIP**, extract it, and `cd` into the extracted folder in a terminal.
+
+### Step 2 — Create and activate a virtual environment
+
+This keeps the project's Python libraries isolated from anything else on your machine.
+
+```bash
+# One-time: create the venv
+python -m venv .venv
+```
+
+Then **activate** it (you'll do this every time you open a new terminal for this project):
+
+```powershell
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
+```cmd
+:: Windows (Command Prompt)
+.venv\Scripts\activate.bat
+```
+```bash
+# macOS / Linux
+source .venv/bin/activate
+```
+
+After activation, your prompt should be prefixed with `(.venv)`. If PowerShell complains about execution policy, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and try again.
+
+### Step 3 — Install the dependencies
+
+With the venv active:
+
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+This pulls in pandas, scikit-learn, matplotlib, seaborn, jupyter, tensorflow, streamlit, and joblib. Takes 2-5 minutes the first time.
+
+### Step 4 — Download the dataset
+
+The CSV is not in this repo (it's 15 MB and you can fetch it for free):
+
+1. Make a free Kaggle account if you don't have one.
+2. Go to <https://www.kaggle.com/datasets/dbdmobile/myanimelist-dataset>.
+3. Click **Download** and unzip.
+4. Move only `anime-dataset-2023.csv` into the project's `data/` folder, so the path is `data/anime-dataset-2023.csv`.
+
+You don't need the two big user files (`users-details-2023.csv`, `users-score-2023.csv`) — they're not used.
+
+### Step 5 — Register the venv as a Jupyter kernel
+
+This is the step most people get stuck on. Jupyter doesn't automatically know about your venv; you have to tell it. With the venv active:
+
+```bash
+python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
+```
+
+After this, when you open Jupyter, the **Kernel** menu will list `Python (mlfinals)`. That's the one to pick.
+
+### Step 6 — Train the models (run the notebook)
+
+The trained models (~190 MB total) are not committed to the repo because the Random Forest pickle is too big for GitHub's per-file limit. You generate them by running the modeling notebook end-to-end. Takes about **3 minutes** on a normal laptop.
+
+```bash
 jupyter lab
 ```
 
-Then open `notebooks/01_eda.ipynb` followed by `notebooks/02_modeling.ipynb`.
+Jupyter Lab opens in your browser.
+
+1. In the file browser on the left, navigate to `notebooks/` and double-click `02_modeling.ipynb`.
+2. **Important**: in the top-right of the notebook, click the kernel name and switch to **Python (mlfinals)**. (If it's not in the list, you skipped Step 5.)
+3. Click the menu **Run → Run All Cells**.
+4. Wait until the last cell prints something like `wrote 11 artifacts to ...\models`. The `models/` folder now contains the trained models, scaler, and supporting JSON files.
+
+You can also browse `01_eda.ipynb` to see the six EDA plots, but it's optional.
+
+### Step 7 — Launch the Streamlit demo
+
+Back in the terminal (still with the venv active):
+
+```bash
+streamlit run app.py
+```
+
+Streamlit prints a URL (default `http://localhost:8501`) and usually opens it automatically. If not, paste it into your browser.
+
+In the app:
+- Pick a model in the left sidebar.
+- Click any preset button (e.g. **Cowboy Bebop · actual 8.75**).
+- Hit **Predict Score**.
+- Compare the predicted number against the "actual" on the button label.
+
+Press `Ctrl+C` in the terminal to stop the server.
+
+### Troubleshooting
+
+**`ModuleNotFoundError: No module named 'pandas'` (or any other library)**
+Your venv isn't active. Re-run the activate command from Step 2 and confirm with `pip list` that the libraries are installed.
+
+**Jupyter shows only "Python 3" — no "Python (mlfinals)"**
+You skipped Step 5, or you ran the `ipykernel install` command from outside the venv. Activate the venv, re-run Step 5, then refresh the Jupyter Lab tab.
+
+**`FileNotFoundError: data/anime-dataset-2023.csv`**
+You skipped Step 4 or saved the CSV in the wrong folder. The file must live at `data/anime-dataset-2023.csv` exactly.
+
+**Streamlit launches but errors with `FileNotFoundError: models/...`**
+You skipped Step 6 or the notebook didn't reach its last cell. Re-run `02_modeling.ipynb` and watch for the `wrote 11 artifacts` message.
+
+**`Kernel died` or notebook import errors**
+The notebook is using the wrong Python. Top-right kernel selector → **Python (mlfinals)**.
+
+**`pip install tensorflow` fails on Windows with Python 3.12**
+TensorFlow 2.13-2.15 doesn't support Python 3.12 on Windows yet. Either install Python 3.11 alongside (and re-create the venv with `py -3.11 -m venv .venv`), or comment out the FFN section at the bottom of `02_modeling.ipynb` — the assignment only requires two algorithms and the FFN is the optional third.
+
+**PowerShell: `cannot be loaded because running scripts is disabled on this system`**
+Run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, confirm with `Y`, then re-activate.
+
+**The Streamlit page is blank**
+Force-refresh the browser tab (`Ctrl+Shift+R` or `Cmd+Shift+R`). If it's still blank, check the terminal for a Python error.
 
 ## Folder map
 
@@ -60,14 +180,18 @@ Then open `notebooks/01_eda.ipynb` followed by `notebooks/02_modeling.ipynb`.
 .
 ├── README.md                  this file
 ├── PLAN.md                    full strategic plan
+├── LICENSE                    MIT
 ├── requirements.txt
+├── app.py                     Streamlit demo UI (run with `streamlit run app.py`)
 ├── data/                      place anime-dataset-2023.csv here (not committed)
 ├── notebooks/
 │   ├── 01_eda.ipynb           EDA + 6 figures
-│   └── 02_modeling.ipynb      preprocessing pipeline, Ridge, RF, ablation, optional FFN
+│   └── 02_modeling.ipynb      preprocessing, Ridge, RF, leakage ablation, optional FFN, persists trained artifacts
 ├── src/
-│   └── preprocess.py          reusable preprocessing pipeline
-└── figures/                   300 dpi PNGs used in the report
+│   ├── preprocess.py          reusable preprocessing pipeline (used by both notebook and app)
+│   └── predict.py             single-row inference helper used by the Streamlit app
+├── models/                    trained models + scaler + JSON metadata (gitignored — generated by step 6)
+└── figures/                   300 dpi PNGs used in the report and the Streamlit screenshot
 ```
 
 ## Methods
@@ -82,26 +206,6 @@ Then open `notebooks/01_eda.ipynb` followed by `notebooks/02_modeling.ipynb`.
 ## Acknowledgement
 
 This project used Anthropic's Claude (web app for strategic planning and report writeup; Claude Code CLI for code, modeling, plots, and repo management). All code was reviewed and run by the author.
-
-
-## How to reproduce
-
-1. Clone the repo and `cd` into it.
-2. Create a virtual environment and install dependencies:
-   ```
-   python -m venv .venv
-   .venv\Scripts\activate          # Windows
-   source .venv/bin/activate       # macOS / Linux
-   pip install -r requirements.txt
-   ```
-3. Download `anime-dataset-2023.csv` from the Kaggle dataset linked above and drop it in `data/`.
-4. Register the venv as a Jupyter kernel and run the notebooks:
-   ```
-   python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
-   jupyter lab notebooks/
-   ```
-5. Run `01_eda.ipynb` first, then `02_modeling.ipynb`. The full modeling notebook completes in ~3 minutes on a modern laptop (the FFN section takes ~30 seconds).
-
 
 ## License
 

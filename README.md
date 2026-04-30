@@ -157,8 +157,8 @@ Press `Ctrl+C` in the terminal to stop the server.
 **`ModuleNotFoundError: No module named 'pandas'` (or any other library)**
 Your venv isn't active. Re-run the activate command from Step 2 and confirm with `pip list` that the libraries are installed.
 
-**Jupyter shows only "Python 3" — no "Python (mlfinals)"**
-You skipped Step 5, or you ran the `ipykernel install` command from outside the venv. Activate the venv, re-run Step 5, then refresh the Jupyter Lab tab.
+**Jupyter shows only "Python 3" — no "Python (mlfinals)"** (only relevant if you used the optional notebook path)
+You either skipped the `ipykernel install` step in Step 5's optional callout, or ran it from outside the venv. Activate the venv, re-run the install, then refresh the Jupyter Lab tab.
 
 **`FileNotFoundError: data/anime-dataset-2023.csv`**
 You skipped Step 4 or saved the CSV in the wrong folder. The file must live at `data/anime-dataset-2023.csv` exactly.

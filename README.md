@@ -115,34 +115,26 @@ The CSV is not in this repo (it's 15 MB and you can fetch it for free):
 
 You don't need the two big user files (`users-details-2023.csv`, `users-score-2023.csv`) — they're not used.
 
-### Step 5 — Register the venv as a Jupyter kernel
+### Step 5 — Train the models
 
-This is the step most people get stuck on. Jupyter doesn't automatically know about your venv; you have to tell it. With the venv active:
-
-```bash
-python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
-```
-
-After this, when you open Jupyter, the **Kernel** menu will list `Python (mlfinals)`. That's the one to pick.
-
-### Step 6 — Train the models (run the notebook)
-
-The trained models (~190 MB total) are not committed to the repo because the Random Forest pickle is too big for GitHub's per-file limit. You generate them by running the modeling notebook end-to-end. Takes about **3 minutes** on a normal laptop.
+The trained models (~190 MB total) are not committed to the repo because the Random Forest pickle is too big for GitHub's per-file limit. You generate them by running the training script. Takes about **3 minutes** on a typical laptop.
 
 ```bash
-jupyter lab
+python train.py
 ```
 
-Jupyter Lab opens in your browser.
+When you see `Done. Wrote 11 artifacts to ...\models`, the `models/` folder is populated and the app will work.
 
-1. In the file browser on the left, navigate to `notebooks/` and double-click `02_modeling.ipynb`.
-2. **Important**: in the top-right of the notebook, click the kernel name and switch to **Python (mlfinals)**. (If it's not in the list, you skipped Step 5.)
-3. Click the menu **Run → Run All Cells**.
-4. Wait until the last cell prints something like `wrote 11 artifacts to ...\models`. The `models/` folder now contains the trained models, scaler, and supporting JSON files.
+> **Optional — using the notebooks instead:** if you'd rather see the modeling work cell-by-cell (or want to read `01_eda.ipynb`), register the venv as a Jupyter kernel first, then open Jupyter Lab:
+>
+> ```bash
+> python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
+> jupyter lab
+> ```
+>
+> Open `notebooks/02_modeling.ipynb`, switch the kernel (top-right) to **Python (mlfinals)**, then **Run → Run All Cells**. Same artifacts get written to `models/`.
 
-You can also browse `01_eda.ipynb` to see the six EDA plots, but it's optional.
-
-### Step 7 — Launch the Streamlit demo
+### Step 6 — Launch the Streamlit demo
 
 Back in the terminal (still with the venv active):
 
@@ -172,7 +164,7 @@ You skipped Step 5, or you ran the `ipykernel install` command from outside the 
 You skipped Step 4 or saved the CSV in the wrong folder. The file must live at `data/anime-dataset-2023.csv` exactly.
 
 **Streamlit launches but errors with `FileNotFoundError: models/...`**
-You skipped Step 6 or the notebook didn't reach its last cell. Re-run `02_modeling.ipynb` and watch for the `wrote 11 artifacts` message.
+You skipped Step 5 or it didn't finish. Run `python train.py` from the project root with the venv active and wait for `Done. Wrote 11 artifacts...`.
 
 **`Kernel died` or notebook import errors**
 The notebook is using the wrong Python. Top-right kernel selector → **Python (mlfinals)**.
@@ -195,6 +187,7 @@ Force-refresh the browser tab (`Ctrl+Shift+R` or `Cmd+Shift+R`). If it's still b
 ├── LICENSE                    MIT
 ├── requirements.txt
 ├── app.py                     Streamlit demo UI (run with `streamlit run app.py`)
+├── train.py                   one-shot training script that writes everything to models/
 ├── data/                      place anime-dataset-2023.csv here (not committed)
 ├── notebooks/
 │   ├── 01_eda.ipynb           EDA + 6 figures

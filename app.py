@@ -51,26 +51,52 @@ MODEL_DESCRIPTIONS = {
     "ridge": "Linear baseline. Interpretable coefficients, slightly worse than RF.",
 }
 
-# Three preset anime to demo without typing. Numbers are real Members /
-# Favorites / Scored By from MyAnimeList around 2024.
+# Six preset anime to demo without typing. Numbers are real Members /
+# Favorites / Scored By from MyAnimeList around 2024. The actual_score key
+# is the published MAL community score and is shown on the button so the
+# prediction can be compared against ground truth at a glance.
 PRESETS = {
     "Cowboy Bebop": {
+        "actual_score": 8.75,
         "Type": "TV", "Source": "Original", "Status": "Finished Airing", "Rating": "R",
         "Episodes": 26, "Duration_min": 24, "start_year": 1998, "Studios": "Sunrise",
         "Genres": ["Action", "Award Winning", "Sci-Fi"],
         "Members": 1771505, "Favorites": 80000, "Scored By": 920000,
     },
     "Frieren: Beyond Journey's End": {
+        "actual_score": 9.30,
         "Type": "TV", "Source": "Manga", "Status": "Finished Airing", "Rating": "PG-13",
         "Episodes": 28, "Duration_min": 24, "start_year": 2023, "Studios": "Madhouse",
         "Genres": ["Adventure", "Drama", "Fantasy"],
         "Members": 800000, "Favorites": 30000, "Scored By": 450000,
     },
     "Sword Art Online": {
+        "actual_score": 7.20,
         "Type": "TV", "Source": "Light novel", "Status": "Finished Airing", "Rating": "PG-13",
         "Episodes": 25, "Duration_min": 23, "start_year": 2012, "Studios": "A-1 Pictures",
         "Genres": ["Action", "Adventure", "Fantasy", "Romance"],
         "Members": 2400000, "Favorites": 50000, "Scored By": 1700000,
+    },
+    "Death Note": {
+        "actual_score": 8.62,
+        "Type": "TV", "Source": "Manga", "Status": "Finished Airing", "Rating": "R",
+        "Episodes": 37, "Duration_min": 23, "start_year": 2006, "Studios": "Madhouse",
+        "Genres": ["Mystery", "Supernatural", "Suspense"],
+        "Members": 3800000, "Favorites": 250000, "Scored By": 3000000,
+    },
+    "Fullmetal Alchemist: Brotherhood": {
+        "actual_score": 9.10,
+        "Type": "TV", "Source": "Manga", "Status": "Finished Airing", "Rating": "R",
+        "Episodes": 64, "Duration_min": 24, "start_year": 2009, "Studios": "Bones",
+        "Genres": ["Action", "Adventure", "Drama", "Fantasy"],
+        "Members": 3200000, "Favorites": 250000, "Scored By": 2000000,
+    },
+    "K-On!": {
+        "actual_score": 7.81,
+        "Type": "TV", "Source": "4-koma manga", "Status": "Finished Airing", "Rating": "PG-13",
+        "Episodes": 13, "Duration_min": 24, "start_year": 2009, "Studios": "Kyoto Animation",
+        "Genres": ["Comedy", "Slice of Life"],
+        "Members": 900000, "Favorites": 25000, "Scored By": 600000,
     },
 }
 
@@ -89,6 +115,9 @@ def _apply_preset(preset_name: str):
     matching widgets. Does NOT trigger prediction."""
     preset = PRESETS[preset_name]
     for key, value in preset.items():
+        if key == "actual_score":
+            # Metadata for the button label; not a form field.
+            continue
         st.session_state[f"form_{key}"] = value
 
 
@@ -145,9 +174,20 @@ def main():
 
     # ---- Presets (outside the form so they fire on click) ----
     st.subheader("Try a preset")
-    cols = st.columns(len(PRESETS))
-    for col, name in zip(cols, PRESETS.keys()):
-        col.button(name, on_click=_apply_preset, args=(name,), use_container_width=True)
+    st.caption("Number in parentheses is the published MAL score so you can compare against the prediction.")
+    # Lay out six presets across two rows of three so the button labels stay
+    # readable.
+    preset_names = list(PRESETS.keys())
+    for chunk_start in range(0, len(preset_names), 3):
+        cols = st.columns(3)
+        for col, name in zip(cols, preset_names[chunk_start : chunk_start + 3]):
+            actual = PRESETS[name]["actual_score"]
+            col.button(
+                f"{name}  ·  actual {actual:.2f}",
+                on_click=_apply_preset,
+                args=(name,),
+                use_container_width=True,
+            )
 
     # ---- Main form ----
     show_engagement = model_name in ("rf_full", "ridge")

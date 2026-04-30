@@ -123,21 +123,51 @@ def _simplify_rating(r) -> str:
     return "Unknown"
 
 
-def engineer_features(df: pd.DataFrame, top_n_studios: int = TOP_N_STUDIOS) -> pd.DataFrame:
-    """Turn the raw DataFrame into a fully numeric matrix ready for sklearn."""
+def engineer_features(
+    df: pd.DataFrame,
+    top_n_studios: int = TOP_N_STUDIOS,
+    fitted_mlb: MultiLabelBinarizer | None = None,
+    top_studios: list[str] | None = None,
+    feature_template: list[str] | None = None,
+    medians: dict[str, float] | None = None,
+):
+    """Turn the raw DataFrame into a fully numeric matrix ready for sklearn.
+
+    Training path (all optional args left as None):
+        Fits a fresh MultiLabelBinarizer on the genres column, picks the top-N
+        studios from the data, computes per-column medians for imputation, and
+        returns the engineered DataFrame plus those fitted artifacts so the
+        caller can persist them.
+
+    Inference path (fitted_mlb / top_studios / feature_template / medians supplied):
+        Reuses the saved artifacts so a single-row prediction frame produces
+        a feature vector matching the training schema column-for-column. Any
+        column that ends up missing after reindexing is filled with 0 (true
+        for unselected one-hot categories) or the saved median (for the few
+        numeric columns).
+
+    Returns:
+        (df, fitted_mlb, top_studios, medians) where the trailing three are
+        either the freshly-fit artifacts (training) or the inputs echoed back
+        (inference).
+    """
     df = df.copy()
 
     # Drop columns we don't model (identifiers, free text, leakage targets).
     df = df.drop(columns=[c for c in DROP_COLS if c in df.columns])
 
     # 'Aired' is free text like "Apr 3, 1998 to Apr 24, 1999". The first
-    # 4-digit run is reliably the start year, which is the only piece we need.
-    df["start_year"] = df["Aired"].astype(str).str.extract(r"(\d{4})").astype(float)
-    df = df.drop(columns=["Aired"])
+    # 4-digit run is reliably the start year. Inference rows may already
+    # carry start_year directly and have no Aired column; that's fine.
+    if "Aired" in df.columns:
+        df["start_year"] = df["Aired"].astype(str).str.extract(r"(\d{4})").astype(float)
+        df = df.drop(columns=["Aired"])
 
-    # Duration_min replaces the raw 'Duration' string.
-    df["Duration_min"] = df["Duration"].apply(_parse_duration)
-    df = df.drop(columns=["Duration"])
+    # Duration_min replaces the raw 'Duration' string. Same conditional as
+    # Aired: inference rows can pass Duration_min directly.
+    if "Duration" in df.columns:
+        df["Duration_min"] = df["Duration"].apply(_parse_duration)
+        df = df.drop(columns=["Duration"])
 
     # Log-transform the heavy-tailed engagement counters. log1p handles zero
     # entries safely and shrinks the dynamic range from ~1 to ~1e6 down to a
@@ -147,13 +177,28 @@ def engineer_features(df: pd.DataFrame, top_n_studios: int = TOP_N_STUDIOS) -> p
             df[f"log_{col.replace(' ', '_')}"] = np.log1p(pd.to_numeric(df[col], errors="coerce"))
     df = df.drop(columns=[c for c in LOG_COUNT_COLS if c in df.columns])
 
-    # Genres is a comma-separated multi-label field. Split into a list per row,
-    # then MultiLabelBinarizer turns the list into one binary column per genre.
-    df["Genres"] = df["Genres"].fillna("").apply(
-        lambda x: [g.strip() for g in str(x).split(",") if g.strip()]
-    )
-    mlb = MultiLabelBinarizer()
-    genre_matrix = mlb.fit_transform(df["Genres"])
+    # Genres is a comma-separated multi-label field at training time. The
+    # inference path passes it as a real list[str] already.
+    def _to_list(x):
+        if isinstance(x, list):
+            return [g.strip() for g in x if g and str(g).strip()]
+        if pd.isna(x):
+            return []
+        return [g.strip() for g in str(x).split(",") if g.strip()]
+
+    df["Genres"] = df["Genres"].apply(_to_list)
+    if fitted_mlb is None:
+        # Training: fit a fresh binarizer.
+        mlb = MultiLabelBinarizer()
+        genre_matrix = mlb.fit_transform(df["Genres"])
+    else:
+        # Inference: reuse the saved binarizer. Genres outside its vocabulary
+        # are silently ignored by transform().
+        mlb = fitted_mlb
+        # Filter unseen labels to suppress sklearn's noisy warning.
+        known = set(mlb.classes_)
+        df["Genres"] = df["Genres"].apply(lambda lst: [g for g in lst if g in known])
+        genre_matrix = mlb.transform(df["Genres"])
     genre_df = pd.DataFrame(
         genre_matrix,
         columns=[f"genre_{g}" for g in mlb.classes_],
@@ -165,8 +210,11 @@ def engineer_features(df: pd.DataFrame, top_n_studios: int = TOP_N_STUDIOS) -> p
     df["Rating"] = df["Rating"].apply(_simplify_rating)
 
     # Cap studios at the top 20 most frequent and bucket the rest as "Other".
-    top_studios = df["Studios"].value_counts().head(top_n_studios).index
-    df["Studios"] = df["Studios"].where(df["Studios"].isin(top_studios), "Other_Studio")
+    if top_studios is None:
+        top_studios_local = df["Studios"].value_counts().head(top_n_studios).index.tolist()
+    else:
+        top_studios_local = list(top_studios)
+    df["Studios"] = df["Studios"].where(df["Studios"].isin(top_studios_local), "Other_Studio")
     df["Studios"] = df["Studios"].fillna("Other_Studio")
 
     # One-hot encode all of the categorical columns at once. drop_first=True
@@ -180,11 +228,33 @@ def engineer_features(df: pd.DataFrame, top_n_studios: int = TOP_N_STUDIOS) -> p
     )
 
     # Median-impute remaining numeric NaNs. Tree models tolerate NaN but Ridge
-    # and the FFN don't, so we impute once here.
-    for c in NUMERIC_FEATURES:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
-            df[c] = df[c].fillna(df[c].median())
+    # and the FFN don't, so we impute once here. On the training path we
+    # compute and remember the medians; on inference we use the saved ones.
+    if medians is None:
+        medians_local = {}
+        for c in NUMERIC_FEATURES:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+                m = df[c].median()
+                medians_local[c] = float(m) if pd.notna(m) else 0.0
+                df[c] = df[c].fillna(medians_local[c])
+        log_cols = [f"log_{c.replace(' ', '_')}" for c in LOG_COUNT_COLS]
+        for c in log_cols:
+            if c in df.columns:
+                m = df[c].median()
+                medians_local[c] = float(m) if pd.notna(m) else 0.0
+                if df[c].isna().any():
+                    df[c] = df[c].fillna(medians_local[c])
+    else:
+        medians_local = dict(medians)
+        for c in NUMERIC_FEATURES:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+                df[c] = df[c].fillna(medians_local.get(c, 0.0))
+        log_cols = [f"log_{c.replace(' ', '_')}" for c in LOG_COUNT_COLS]
+        for c in log_cols:
+            if c in df.columns and df[c].isna().any():
+                df[c] = df[c].fillna(medians_local.get(c, 0.0))
 
     # get_dummies returns bool columns. Cast to int8 so StandardScaler and
     # numpy operations work cleanly downstream.
@@ -192,14 +262,19 @@ def engineer_features(df: pd.DataFrame, top_n_studios: int = TOP_N_STUDIOS) -> p
         if df[c].dtype == bool:
             df[c] = df[c].astype(np.int8)
 
-    # Engagement count NaNs (rare; come from rows where the count itself was
-    # missing in the raw CSV) get the median of the log-transformed column.
-    log_cols = [f"log_{c.replace(' ', '_')}" for c in LOG_COUNT_COLS]
-    for c in log_cols:
-        if c in df.columns and df[c].isna().any():
-            df[c] = df[c].fillna(df[c].median())
+    # Inference path: align to the training feature schema. Missing columns
+    # (categories the user didn't pick) become 0; extra columns get dropped.
+    # Score is excluded from feature_template, so we keep it if present.
+    if feature_template is not None:
+        target_cols = list(feature_template)
+        keep_target = "Score" in df.columns
+        # Reindex feature columns; preserve Score column position-independently.
+        score_series = df["Score"] if keep_target else None
+        df = df.reindex(columns=target_cols, fill_value=0)
+        if keep_target:
+            df["Score"] = score_series.values
 
-    return df
+    return df, mlb, top_studios_local, medians_local
 
 
 def split_and_scale(
@@ -259,8 +334,9 @@ def split_and_scale(
 
 def run_pipeline(path: str | Path = "data/anime-dataset-2023.csv", drop_features=None):
     """Convenience wrapper that runs the three stages back to back. Useful for
-    a quick smoke test from the command line."""
+    a quick smoke test from the command line. Discards the fitted artifacts
+    (MLB, top_studios, medians) since the smoke test doesn't need them."""
     raw = load_raw(path)
-    feats = engineer_features(raw)
+    feats, _mlb, _studios, _medians = engineer_features(raw)
     splits = split_and_scale(feats, drop_features=drop_features)
     return raw, feats, splits

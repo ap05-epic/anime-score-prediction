@@ -21,6 +21,23 @@ Regression on the MyAnimeList community Score (1-10 continuous) given anime meta
 | Feed-Forward NN | 0.3347 | 0.4614 | 0.7423 | 128-64 dense, dropout 0.3, Adam lr=1e-3 |
 | RF (no leakage) | 0.4336 | 0.5782 | 0.5954 | same RF params, engagement features dropped |
 
+## Demo
+
+A Streamlit app at `app.py` lets you enter anime metadata and get a live score prediction. Useful for sanity-checking the model and for the report screenshots.
+
+![Demo screenshot](figures/16_demo_screenshot.png)
+
+To launch it locally:
+
+1. Make sure the model artifacts exist. They're not committed because the Random Forest pickles are ~95 MB each (above the GitHub file-size limit). Regenerate them by running `notebooks/02_modeling.ipynb` end-to-end; the final cell writes everything to `models/`.
+2. From the project root with the venv active:
+   ```
+   streamlit run app.py
+   ```
+3. Open the URL Streamlit prints (default `http://localhost:8501`).
+
+The sidebar lets you switch between the three trained models (RF full, RF leak-free, Ridge). Three preset buttons (Cowboy Bebop, Frieren, Sword Art Online) populate the form so you can demo without typing. Built with Streamlit.
+
 ## Dataset
 
 - Source: [dbdmobile/myanimelist-dataset on Kaggle](https://www.kaggle.com/datasets/dbdmobile/myanimelist-dataset)

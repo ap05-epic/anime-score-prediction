@@ -38,22 +38,34 @@ To launch the app, follow the **Getting started** guide below. The launch comman
 
 ## Getting started
 
+> **Repo:** <https://github.com/ap05-epic/anime-score-prediction>
+
 Total time: about 10 minutes (most of it waiting for `pip install` and one notebook run). The instructions assume zero prior knowledge of Python virtual environments or Jupyter kernels.
 
 ### Prerequisites
 
 - **Python 3.10 or 3.11** — check with `python --version`. TensorFlow 2.13+ does not yet support 3.12 on Windows, so stick to 3.10 or 3.11. Get it from [python.org](https://www.python.org/downloads/) if missing.
-- **Git** (or just download the ZIP from GitHub).
+- **Git** (or just download the ZIP from [GitHub](https://github.com/ap05-epic/anime-score-prediction)).
 - About **1.5 GB free disk space** (the ML libraries and trained models are bulky).
 
 ### Step 1 — Get the code
+
+Repo URL: <https://github.com/ap05-epic/anime-score-prediction>
 
 ```bash
 git clone https://github.com/ap05-epic/anime-score-prediction.git
 cd anime-score-prediction
 ```
 
-If you don't have git, hit the green **Code** button on GitHub, choose **Download ZIP**, extract it, and `cd` into the extracted folder in a terminal.
+**Already cloned and want the latest version?** From inside the project folder:
+
+```bash
+git pull
+```
+
+(That pulls from <https://github.com/ap05-epic/anime-score-prediction>.)
+
+**No git installed?** Hit the green **Code** button on the [repo page](https://github.com/ap05-epic/anime-score-prediction), choose **Download ZIP**, extract it, and `cd` into the extracted folder in a terminal.
 
 ### Step 2 — Create and activate a virtual environment
 

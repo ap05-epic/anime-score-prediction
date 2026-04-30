@@ -246,8 +246,19 @@ def main():
             "Favorites": st.session_state.get("form_Favorites", 0),
             "Scored By": st.session_state.get("form_Scored_By", 0),
         }
-        with st.spinner("Predicting…"):
+        # st.status renders a prominent collapsible box with a live spinner
+        # so the user can see what's happening. The first click for a given
+        # model is the slow one (joblib has to deserialize the ~95 MB RF
+        # pickle); subsequent clicks hit the lru_cache and are instant.
+        with st.status("Running prediction…", expanded=True) as status:
+            st.write("📦 Loading model artifacts (cached after first call)…")
             result = predict_score(user_inputs, model_name=model_name)
+            st.write("🧮 Built feature vector and ran the model")
+            status.update(
+                label=f"Done — predicted score {result['predicted_score']:.2f}",
+                state="complete",
+                expanded=False,
+            )
         st.session_state["last_result"] = result
         st.session_state["last_inputs"] = user_inputs
 

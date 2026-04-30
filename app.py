@@ -98,6 +98,32 @@ PRESETS = {
         "Genres": ["Comedy", "Slice of Life"],
         "Members": 900000, "Favorites": 25000, "Scored By": 600000,
     },
+    "Boruto": {
+        # Naruto sequel; MAL gives it a tepid mid-low score despite long runtime.
+        "actual_score": 5.84,
+        "Type": "TV", "Source": "Manga", "Status": "Currently Airing", "Rating": "PG-13",
+        "Episodes": 293, "Duration_min": 23, "start_year": 2017, "Studios": "Pierrot",
+        "Genres": ["Action", "Adventure", "Fantasy"],
+        "Members": 700000, "Favorites": 5000, "Scored By": 250000,
+    },
+    "Pupa": {
+        # Notorious 4-min-per-episode horror; one of the lowest-rated TV
+        # anime from a top-20 studio.
+        "actual_score": 3.55,
+        "Type": "TV", "Source": "Manga", "Status": "Finished Airing", "Rating": "R+",
+        "Episodes": 12, "Duration_min": 4, "start_year": 2014, "Studios": "Studio Deen",
+        "Genres": ["Horror"],
+        "Members": 120000, "Favorites": 500, "Scored By": 80000,
+    },
+    "Ex-Arm": {
+        # 2021 CG anime widely panned for its animation. Studio Visual Flight
+        # is not in the trained top-20, so it buckets as Other_Studio.
+        "actual_score": 2.80,
+        "Type": "TV", "Source": "Manga", "Status": "Finished Airing", "Rating": "PG-13",
+        "Episodes": 12, "Duration_min": 23, "start_year": 2021, "Studios": "Other_Studio",
+        "Genres": ["Action", "Sci-Fi"],
+        "Members": 90000, "Favorites": 200, "Scored By": 50000,
+    },
 }
 
 

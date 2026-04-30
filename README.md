@@ -40,7 +40,7 @@ To launch the app, follow the **Getting started** guide below. The launch comman
 
 > **Repo:** <https://github.com/ap05-epic/anime-score-prediction>
 
-Total time: about 10 minutes (most of it waiting for `pip install` and one notebook run). The instructions assume zero prior knowledge of Python virtual environments or Jupyter kernels.
+Two paths: the **fast path** (one setup script, recommended) and the **manual path** (every step explicit).
 
 ### Prerequisites
 
@@ -48,135 +48,197 @@ Total time: about 10 minutes (most of it waiting for `pip install` and one noteb
 - **Git** (or just download the ZIP from [GitHub](https://github.com/ap05-epic/anime-score-prediction)).
 - About **1.5 GB free disk space** (the ML libraries and trained models are bulky).
 
-### Step 1 — Get the code
+---
 
-Repo URL: <https://github.com/ap05-epic/anime-score-prediction>
+### Fast path (recommended)
 
-```bash
+The setup script creates the venv, installs all dependencies, and trains the models in one go. ~5-7 minutes. Doing it this way avoids the most common gotcha — pasting multiple commands into PowerShell while one is still running, which interrupts it mid-flight.
+
+**1. Get the code** (repo URL: <https://github.com/ap05-epic/anime-score-prediction>):
+
+```powershell
 git clone https://github.com/ap05-epic/anime-score-prediction.git
 cd anime-score-prediction
 ```
 
-**Already cloned and want the latest version?** From inside the project folder:
+If you don't have git, hit **Code → Download ZIP** on the [repo page](https://github.com/ap05-epic/anime-score-prediction), extract it, and `cd` into the folder.
 
-```bash
-git pull
-```
+**2. Download the dataset.** Sign in to Kaggle, grab `anime-dataset-2023.csv` from <https://www.kaggle.com/datasets/dbdmobile/myanimelist-dataset>, unzip it, and put just that one CSV into the `data/` folder so the path is `data/anime-dataset-2023.csv`.
 
-(That pulls from <https://github.com/ap05-epic/anime-score-prediction>.)
-
-**No git installed?** Hit the green **Code** button on the [repo page](https://github.com/ap05-epic/anime-score-prediction), choose **Download ZIP**, extract it, and `cd` into the extracted folder in a terminal.
-
-### Step 2 — Create and activate a virtual environment
-
-This keeps the project's Python libraries isolated from anything else on your machine.
-
-```bash
-# One-time: create the venv
-python -m venv .venv
-```
-
-Then **activate** it (you'll do this every time you open a new terminal for this project):
+**3. Run the setup script.** Paste exactly this and **wait for it to finish** (do not paste the next command until you see "Done"):
 
 ```powershell
 # Windows (PowerShell)
-.venv\Scripts\Activate.ps1
-```
-```cmd
-:: Windows (Command Prompt)
-.venv\Scripts\activate.bat
+.\setup.ps1
 ```
 ```bash
 # macOS / Linux
-source .venv/bin/activate
+bash setup.sh
 ```
 
-After activation, your prompt should be prefixed with `(.venv)`. If PowerShell complains about execution policy, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and try again.
+If PowerShell refuses to run the script with "running scripts is disabled":
 
-### Step 3 — Install the dependencies
-
-With the venv active:
-
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-This pulls in pandas, scikit-learn, matplotlib, seaborn, jupyter, tensorflow, streamlit, and joblib. Takes 2-5 minutes the first time.
+Confirm with `Y`, then re-run `.\setup.ps1`.
 
-### Step 4 — Download the dataset
+**4. Launch the app.** When the setup finishes you'll see "Done" and instructions. Either:
 
-The CSV is not in this repo (it's 15 MB and you can fetch it for free):
-
-1. Make a free Kaggle account if you don't have one.
-2. Go to <https://www.kaggle.com/datasets/dbdmobile/myanimelist-dataset>.
-3. Click **Download** and unzip.
-4. Move only `anime-dataset-2023.csv` into the project's `data/` folder, so the path is `data/anime-dataset-2023.csv`.
-
-You don't need the two big user files (`users-details-2023.csv`, `users-score-2023.csv`) — they're not used.
-
-### Step 5 — Train the models
-
-The trained models (~190 MB total) are not committed to the repo because the Random Forest pickle is too big for GitHub's per-file limit. You generate them by running the training script. Takes about **3 minutes** on a typical laptop.
-
-```bash
-python train.py
+```powershell
+# Windows — option A: skip activation, call streamlit directly
+.\.venv\Scripts\streamlit.exe run app.py
 ```
 
-When you see `Done. Wrote 11 artifacts to ...\models`, the `models/` folder is populated and the app will work.
-
-> **Optional — using the notebooks instead:** if you'd rather see the modeling work cell-by-cell (or want to read `01_eda.ipynb`), register the venv as a Jupyter kernel first, then open Jupyter Lab:
->
-> ```bash
-> python -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
-> jupyter lab
-> ```
->
-> Open `notebooks/02_modeling.ipynb`, switch the kernel (top-right) to **Python (mlfinals)**, then **Run → Run All Cells**. Same artifacts get written to `models/`.
-
-### Step 6 — Launch the Streamlit demo
-
-Back in the terminal (still with the venv active):
-
-```bash
+```powershell
+# Windows — option B: activate, then run
+.\.venv\Scripts\Activate.ps1
 streamlit run app.py
 ```
 
-Streamlit prints a URL (default `http://localhost:8501`) and usually opens it automatically. If not, paste it into your browser.
+```bash
+# macOS / Linux — option A
+.venv/bin/streamlit run app.py
+```
 
-In the app:
-- Pick a model in the left sidebar.
-- Click any preset button (e.g. **Cowboy Bebop · actual 8.75**).
-- Hit **Predict Score**.
-- Compare the predicted number against the "actual" on the button label.
+A browser tab opens at `http://localhost:8501`. Click any preset button (e.g. **Cowboy Bebop · actual 8.75**), then **Predict Score**. Press `Ctrl+C` in the terminal to stop.
 
-Press `Ctrl+C` in the terminal to stop the server.
+---
+
+### Manual path
+
+Use this if the script approach fails or you prefer to see every step. Each command is **standalone — paste only one at a time and wait for the prompt before pasting the next**, otherwise PowerShell may interrupt the running command.
+
+**1. Clone:**
+
+```powershell
+git clone https://github.com/ap05-epic/anime-score-prediction.git
+cd anime-score-prediction
+```
+
+**2. Create the venv.** Wait 30-60 seconds for this to finish (it's downloading pip):
+
+```powershell
+python -m venv .venv
+```
+
+When the prompt comes back, verify it worked:
+
+```powershell
+Test-Path .venv\Scripts\python.exe
+```
+
+Should print `True`. If it prints `False`, the venv creation was interrupted; delete the partial folder and retry:
+
+```powershell
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+```
+
+**3. Install dependencies.** Note: this uses the venv's python directly (no `Activate` needed):
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+```
+
+Then, on its own, after the prompt comes back:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+This takes 2-5 minutes. Don't interrupt it.
+
+**4. Download the dataset** (same as fast path step 2): drop `anime-dataset-2023.csv` into `data/`.
+
+**5. Train the models.** ~3 minutes:
+
+```powershell
+.\.venv\Scripts\python.exe train.py
+```
+
+When you see `Done. Wrote 11 artifacts to ...\models`, you're ready.
+
+**6. Launch the demo:**
+
+```powershell
+.\.venv\Scripts\streamlit.exe run app.py
+```
+
+> **Optional — using the notebooks:** if you want to step through `01_eda.ipynb` or `02_modeling.ipynb` in Jupyter Lab, first register the venv as a Jupyter kernel and launch Lab:
+>
+> ```powershell
+> .\.venv\Scripts\python.exe -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"
+> .\.venv\Scripts\jupyter.exe lab
+> ```
+>
+> In Jupyter, top-right kernel selector → **Python (mlfinals)**.
 
 ### Troubleshooting
 
-**`ModuleNotFoundError: No module named 'pandas'` (or any other library)**
-Your venv isn't active. Re-run the activate command from Step 2 and confirm with `pip list` that the libraries are installed.
+**`KeyboardInterrupt` during `python -m venv .venv`**
+You pasted the next command into PowerShell before this one finished. PowerShell sends a Ctrl-C to the running command when it sees the next input. Fix:
 
-**Jupyter shows only "Python 3" — no "Python (mlfinals)"** (only relevant if you used the optional notebook path)
-You either skipped the `ipykernel install` step in Step 5's optional callout, or ran it from outside the venv. Activate the venv, re-run the install, then refresh the Jupyter Lab tab.
+```powershell
+Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
+python -m venv .venv
+# WAIT for the prompt before doing anything else.
+```
+
+Then either re-run `.\setup.ps1` or continue manually with `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+
+**`The module '.venv' could not be loaded`** (when running `Activate.ps1`)
+The venv was never fully created — usually a leftover from the KeyboardInterrupt issue above. Delete `.venv` and recreate:
+
+```powershell
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+```
+
+**`PowerShell: cannot be loaded because running scripts is disabled on this system`**
+Run once, then re-try the script:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+**`ModuleNotFoundError: No module named 'pandas'` (or any other library)**
+Dependencies aren't installed in the venv you're using. Run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip list
+```
+
+Confirm pandas, streamlit, scikit-learn etc. show up in the list.
 
 **`FileNotFoundError: data/anime-dataset-2023.csv`**
-You skipped Step 4 or saved the CSV in the wrong folder. The file must live at `data/anime-dataset-2023.csv` exactly.
+You haven't placed the CSV. Download from <https://www.kaggle.com/datasets/dbdmobile/myanimelist-dataset>, unzip, and put `anime-dataset-2023.csv` into the `data/` folder.
 
 **Streamlit launches but errors with `FileNotFoundError: models/...`**
-You skipped Step 5 or it didn't finish. Run `python train.py` from the project root with the venv active and wait for `Done. Wrote 11 artifacts...`.
+You haven't trained the models yet. Run:
 
-**`Kernel died` or notebook import errors**
-The notebook is using the wrong Python. Top-right kernel selector → **Python (mlfinals)**.
+```powershell
+.\.venv\Scripts\python.exe train.py
+```
+
+Wait for `Done. Wrote 11 artifacts...`.
 
 **`pip install tensorflow` fails on Windows with Python 3.12**
-TensorFlow 2.13-2.15 doesn't support Python 3.12 on Windows yet. Either install Python 3.11 alongside (and re-create the venv with `py -3.11 -m venv .venv`), or comment out the FFN section at the bottom of `02_modeling.ipynb` — the assignment only requires two algorithms and the FFN is the optional third.
+TensorFlow 2.13-2.15 doesn't support Python 3.12 on Windows yet. Install Python 3.11 alongside (download from python.org), then recreate the venv with the 3.11 launcher:
 
-**PowerShell: `cannot be loaded because running scripts is disabled on this system`**
-Run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, confirm with `Y`, then re-activate.
+```powershell
+Remove-Item -Recurse -Force .venv
+py -3.11 -m venv .venv
+.\setup.ps1
+```
+
+**Jupyter shows only "Python 3" — no "Python (mlfinals)"** (only if you used the optional notebook path)
+You skipped the `ipykernel install` step under "Using the notebooks" or ran it from outside the venv. Run `.\.venv\Scripts\python.exe -m ipykernel install --user --name=mlfinals --display-name="Python (mlfinals)"` and refresh the Jupyter Lab tab.
 
 **The Streamlit page is blank**
-Force-refresh the browser tab (`Ctrl+Shift+R` or `Cmd+Shift+R`). If it's still blank, check the terminal for a Python error.
+Force-refresh the browser tab (`Ctrl+Shift+R` on Windows, `Cmd+Shift+R` on macOS). If still blank, check the terminal for a Python error.
 
 ## Folder map
 
@@ -188,6 +250,8 @@ Force-refresh the browser tab (`Ctrl+Shift+R` or `Cmd+Shift+R`). If it's still b
 ├── requirements.txt
 ├── app.py                     Streamlit demo UI (run with `streamlit run app.py`)
 ├── train.py                   one-shot training script that writes everything to models/
+├── setup.ps1                  one-shot Windows bootstrap (venv + deps + train)
+├── setup.sh                   one-shot macOS / Linux bootstrap
 ├── data/                      place anime-dataset-2023.csv here (not committed)
 ├── notebooks/
 │   ├── 01_eda.ipynb           EDA + 6 figures
